@@ -88,3 +88,7 @@
 - [x] 后端：tRPC 路由 aiConfig.get / aiConfig.save / aiConfig.test
 - [x] 前端：管理后台 AI 模型配置面板（提供商下拉、API Key 输入、模型型号、Base URL、测试按钮）
 - [x] 前端：预设常用提供商（DeepSeek / OpenAI / Gemini / Ollama 本地 / 自定义）
+
+## 文档
+- [x] README.md：项目介绍、技术架构、快速开始
+- [x] docs/GUIDE.md：完整部署与使用指南（群晖 NAS、萤石云、AI 模型、日常使用、运维备份、FAQ）
