@@ -39,7 +39,7 @@ import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Link } from "wouter";
-import { AlertTriangle, ExternalLink } from "lucide-react";
+import { AlertTriangle, ExternalLink, Bot } from "lucide-react";
 
 type CameraFormData = {
   name: string;
@@ -465,6 +465,25 @@ export default function Admin() {
           <p>4. 启动监控后，系统将自动抓拍图片并通过 AI 识别鸟类，识别到鸟类时自动保存记录。</p>
           <p>5. 抓拍图片将上传至云存储永久保存，不受萤石云 2 小时有效期限制。</p>
         </div>
+      </div>
+
+      {/* AI 模型管理入口 */}
+      <div className="mt-4 bg-card border border-border rounded-xl p-5 shadow-sm flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}>
+            <Bot className="w-4 h-4" strokeWidth={1.5} />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-foreground">AI 识鸟模型</p>
+            <p className="text-xs text-muted-foreground">配置和切换 DeepSeek、OpenAI、Gemini、Ollama 等 AI 提供商</p>
+          </div>
+        </div>
+        <Link href="/admin/ai-models">
+          <Button size="sm" style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}>
+            <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+            管理模型
+          </Button>
+        </Link>
       </div>
 
       {/* 添加/编辑对话框 */}

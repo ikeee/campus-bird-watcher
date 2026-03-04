@@ -1,0 +1,92 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 校园鸟屋智能监控系统 - Docker Compose 部署配置
+# 适用于群晖 NAS / 任何支持 Docker 的 Linux 主机
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  # ── 应用服务 ──────────────────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: campus-bird-watcher
+    restart: unless-stopped
+    ports:
+      - "3000:3000"           # 局域网访问端口，可改为其他端口如 8080
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: mysql://birdwatch:${DB_PASSWORD}@db:3306/birdwatch
+      JWT_SECRET: ${JWT_SECRET}
+      # AI 模型配置（初始默认，可在管理后台修改）
+      DEFAULT_AI_PROVIDER: ${DEFAULT_AI_PROVIDER:-deepseek}
+      DEFAULT_AI_API_KEY: ${DEFAULT_AI_API_KEY:-}
+      DEFAULT_AI_BASE_URL: ${DEFAULT_AI_BASE_URL:-https://api.deepseek.com}
+      DEFAULT_AI_MODEL: ${DEFAULT_AI_MODEL:-deepseek-chat}
+      # 图片存储路径（容器内路径，映射到宿主机）
+      UPLOADS_DIR: /app/uploads
+      # 管理员初始密码（首次启动后请在管理后台修改）
+      ADMIN_INIT_PASSWORD: ${ADMIN_INIT_PASSWORD:-changeme123}
+    volumes:
+      - bird_uploads:/app/uploads   # 鸟类图片持久化存储
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - birdwatch_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── 数据库服务 ────────────────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: campus-bird-watcher-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: birdwatch
+      MYSQL_USER: birdwatch
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    volumes:
+      - bird_db:/var/lib/mysql          # 数据库数据持久化
+      - ./docker/mysql-init:/docker-entrypoint-initdb.d  # 初始化 SQL
+    networks:
+      - birdwatch_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "birdwatch", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # 不对外暴露端口，仅容器内部访问
+    # 如需外部访问数据库，取消下面注释：
+    # ports:
+    #   - "3306:3306"
+
+# ── 持久化卷 ──────────────────────────────────────────────────────────────────
+volumes:
+  bird_uploads:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${UPLOADS_HOST_PATH:-./data/uploads}   # 宿主机图片存储目录
+
+  bird_db:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DB_HOST_PATH:-./data/mysql}          # 宿主机数据库目录
+
+# ── 网络 ──────────────────────────────────────────────────────────────────────
+networks:
+  birdwatch_net:
+    driver: bridge

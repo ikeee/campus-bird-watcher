@@ -73,3 +73,18 @@
 - [x] FanGallery：右上角绿色胶囊标签（品种名）
 - [x] FanGallery：去掉"Stunning Images"标题文字
 - [x] FanGallery：5 张卡片扇形展开透视角度与参考图一致
+
+## Self-Host 内网部署改造
+- [x] AI 识鸟：替换为 DeepSeek Vision API（deepseek-chat / deepseek-vision）
+- [x] 图片存储：替换 S3 为本地文件系统，Express 提供 /uploads 静态路由
+- [x] 认证：去掉 Manus OAuth，改为管理员密码登录（JWT）
+- [x] 数据库：支持通过环境变量配置本地 MySQL 连接
+- [x] Docker Compose：包含 app + mysql 服务，挂载本地卷
+- [x] 群晖 NAS 安装文档（Container Manager 操作步骤）
+
+## AI 模型管理功能
+- [x] 数据库：新增 ai_model_config 表（provider, apiKey, baseUrl, model, isActive）
+- [x] 后端：birdRecognition.ts 动态读取数据库中的 AI 配置
+- [x] 后端：tRPC 路由 aiConfig.get / aiConfig.save / aiConfig.test
+- [x] 前端：管理后台 AI 模型配置面板（提供商下拉、API Key 输入、模型型号、Base URL、测试按钮）
+- [x] 前端：预设常用提供商（DeepSeek / OpenAI / Gemini / Ollama 本地 / 自定义）

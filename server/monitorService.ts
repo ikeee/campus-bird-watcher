@@ -9,7 +9,7 @@ import { birdSightings, cameraConfigs } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { getEzvizToken, captureDeviceImage } from "./ezviz";
 import { recognizeBird } from "./birdRecognition";
-import { storagePut } from "./storage";
+import { localStoragePut } from "./localStorage";
 import { nanoid } from "nanoid";
 
 /** 每个摄像头的轮询定时器 */
@@ -22,9 +22,9 @@ const lastCaptureTime = new Map<number, number>();
 const MIN_INTERVAL_MS = 4000;
 
 /**
- * 下载图片并上传至 S3，返回持久化 URL
+ * 下载图片并保存到本地文件系统，返回持久化 URL
  */
-async function uploadImageToS3(
+async function uploadImageToLocal(
   picUrl: string,
   deviceSerial: string
 ): Promise<{ s3Url: string; s3Key: string }> {
@@ -37,7 +37,7 @@ async function uploadImageToS3(
   const suffix = nanoid(8);
   const key = `bird-captures/${deviceSerial}/${Date.now()}-${suffix}.jpg`;
 
-  const { url } = await storagePut(key, buffer, "image/jpeg");
+  const { url } = await localStoragePut(key, buffer, "image/jpeg");
   return { s3Url: url, s3Key: key };
 }
 
@@ -70,15 +70,15 @@ async function runCaptureAndRecognize(configId: number): Promise<void> {
     const picUrl = await captureDeviceImage(token, config.deviceSerial, config.channelNo);
     const capturedAt = Date.now();
 
-    // 3. 上传图片至 S3（防止 2 小时过期）
+    // 3. 保存图片到本地文件系统（防止萤石云 URL 2 小时过期）
     let s3Url = "";
     let s3Key = "";
     try {
-      const uploaded = await uploadImageToS3(picUrl, config.deviceSerial);
+      const uploaded = await uploadImageToLocal(picUrl, config.deviceSerial);
       s3Url = uploaded.s3Url;
       s3Key = uploaded.s3Key;
     } catch (uploadErr) {
-      console.warn("[Monitor] S3 上传失败，使用原始 URL:", uploadErr);
+      console.warn("[Monitor] 本地存储失败，使用原始 URL:", uploadErr);
     }
 
     // 4. AI 识别鸟类（优先用 S3 URL，否则用原始 URL）

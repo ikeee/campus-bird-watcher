@@ -33,12 +33,19 @@ import {
   batchApproveSightings,
   batchRejectSightings,
   reclassifyByThreshold,
+  getAllAiModelConfigs,
+  getActiveAiModelConfig,
+  createAiModelConfig,
+  updateAiModelConfig,
+  deleteAiModelConfig,
+  activateAiModelConfig,
 } from "./db";
 import {
   startMonitoring,
   stopMonitoring,
   getActiveMonitors,
 } from "./monitorService";
+import { testBirdRecognition } from "./birdRecognition";
 
 // Admin guard
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -499,6 +506,119 @@ export const appRouter = router({
     activeMonitors: adminProcedure.query(async () => {
       return getActiveMonitors();
     }),
+  }),
+
+  // ─── AI 模型配置管理 ─────────────────────────────────────────────────────────
+  aiModel: router({
+    /** 获取所有 AI 模型配置列表 */
+    list: adminProcedure.query(async () => {
+      return getAllAiModelConfigs();
+    }),
+
+    /** 获取当前激活的配置 */
+    active: adminProcedure.query(async () => {
+      return getActiveAiModelConfig() ?? null;
+    }),
+
+    /** 新增 AI 模型配置 */
+    create: adminProcedure
+      .input(
+        z.object({
+          name: z.string().min(1),
+          provider: z.string().min(1),
+          apiKey: z.string().min(1),
+          baseUrl: z.string().url(),
+          model: z.string().min(1),
+          imageDetail: z.enum(["low", "high", "auto"]).default("high"),
+          maxTokens: z.number().int().min(128).max(4096).default(512),
+          notes: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await createAiModelConfig({
+          name: input.name,
+          provider: input.provider,
+          apiKey: input.apiKey,
+          baseUrl: input.baseUrl,
+          model: input.model,
+          imageDetail: input.imageDetail,
+          maxTokens: input.maxTokens,
+          notes: input.notes ?? null,
+          isActive: false,
+        });
+        return { success: true };
+      }),
+
+    /** 更新 AI 模型配置 */
+    update: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          name: z.string().min(1).optional(),
+          provider: z.string().optional(),
+          apiKey: z.string().optional(),
+          baseUrl: z.string().url().optional(),
+          model: z.string().optional(),
+          imageDetail: z.enum(["low", "high", "auto"]).optional(),
+          maxTokens: z.number().int().min(128).max(4096).optional(),
+          notes: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { id, ...rest } = input;
+        await updateAiModelConfig(id, rest);
+        return { success: true };
+      }),
+
+    /** 删除 AI 模型配置 */
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await deleteAiModelConfig(input.id);
+        return { success: true };
+      }),
+
+    /** 激活指定配置（同时取消其他配置的激活状态） */
+    activate: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await activateAiModelConfig(input.id);
+        return { success: true };
+      }),
+
+    /**
+     * 测试指定配置的识别效果
+     * 使用传入的配置（不写入数据库）对测试图片进行识别
+     */
+    test: adminProcedure
+      .input(
+        z.object({
+          apiKey: z.string().min(1),
+          baseUrl: z.string().url(),
+          model: z.string().min(1),
+          imageDetail: z.enum(["low", "high", "auto"]).default("high"),
+          maxTokens: z.number().int().min(128).max(4096).default(512),
+          /** 测试图片 URL，不传则使用内置测试图片 */
+          imageUrl: z.string().url().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        // 使用一张公开的麻雀图片作为默认测试图
+        const testImageUrl =
+          input.imageUrl ??
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Passer_montanus_malaccensis_male.jpg/320px-Passer_montanus_malaccensis_male.jpg";
+        const result = await testBirdRecognition(
+          {
+            apiKey: input.apiKey,
+            baseUrl: input.baseUrl.replace(/\/$/, ""),
+            model: input.model,
+            imageDetail: input.imageDetail,
+            maxTokens: input.maxTokens,
+          },
+          testImageUrl
+        );
+        return result;
+      }),
   }),
 });
 

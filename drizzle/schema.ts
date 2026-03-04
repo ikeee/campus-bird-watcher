@@ -179,3 +179,37 @@ export const systemConfig = mysqlTable("system_config", {
 
 export type SystemConfig = typeof systemConfig.$inferSelect;
 export type InsertSystemConfig = typeof systemConfig.$inferInsert;
+
+/**
+ * AI 模型配置表
+ * 管理员可在后台配置不同的 AI 提供商和模型
+ */
+export const aiModelConfig = mysqlTable("ai_model_config", {
+  id: int("id").autoincrement().primaryKey(),
+  /** 配置名称，如“DeepSeek 识鸟” */
+  name: varchar("name", { length: 128 }).notNull(),
+  /**
+   * 提供商标识：
+   * deepseek | openai | gemini | ollama | custom
+   */
+  provider: varchar("provider", { length: 64 }).notNull().default("deepseek"),
+  /** API Key */
+  apiKey: text("apiKey").notNull(),
+  /** API Base URL，默认为对应提供商的官方地址 */
+  baseUrl: varchar("baseUrl", { length: 512 }).notNull(),
+  /** 模型型号，如 deepseek-chat、gpt-4o、gemini-2.0-flash */
+  model: varchar("model", { length: 128 }).notNull(),
+  /** 识别图片时使用的详细程度：low | high | auto */
+  imageDetail: varchar("imageDetail", { length: 16 }).notNull().default("high"),
+  /** 最大 token 数 */
+  maxTokens: int("maxTokens").notNull().default(512),
+  /** 是否为当前激活的配置 */
+  isActive: boolean("isActive").notNull().default(false),
+  /** 备注 */
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AiModelConfig = typeof aiModelConfig.$inferSelect;
+export type InsertAiModelConfig = typeof aiModelConfig.$inferInsert;

@@ -11,6 +11,7 @@ import Admin from "./pages/Admin";
 import Encyclopedia from "./pages/Encyclopedia";
 import EncyclopediaDetail from "./pages/EncyclopediaDetail";
 import Review from "./pages/Review";
+import AiModelManager from "./pages/AiModelManager";
 import Layout from "./components/Layout";
 
 function Router() {
@@ -24,6 +25,7 @@ function Router() {
         <Route path="/encyclopedia/:id" component={EncyclopediaDetail} />
         <Route path="/admin" component={Admin} />
         <Route path="/review" component={Review} />
+        <Route path="/admin/ai-models" component={AiModelManager} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>

@@ -8,6 +8,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { getUploadsAbsDir } from "../localStorage";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -34,6 +35,13 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  // 本地上传图片静态访问路由（Self-host 版本）
+  // 图片保存在 uploads/ 目录，通过 /uploads/<path> 访问
+  app.use("/uploads", express.static(getUploadsAbsDir(), {
+    maxAge: "7d",
+    etag: true,
+  }));
+
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   // tRPC API

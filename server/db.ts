@@ -1,6 +1,6 @@
 import { eq, desc, and, gte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, birdSightings, cameraConfigs, birdEncyclopedia, InsertBirdSighting, InsertCameraConfig, InsertBirdEncyclopedia } from "../drizzle/schema";
+import { InsertUser, users, birdSightings, cameraConfigs, birdEncyclopedia, InsertBirdSighting, InsertCameraConfig, InsertBirdEncyclopedia, aiModelConfig, AiModelConfig, InsertAiModelConfig } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -435,4 +435,64 @@ export async function getEncyclopediaStats() {
     count: Number(r.count),
   }));
   return { total, taxonomyCounts };
+}
+
+// ─────────────────────────────────────────────
+// AI 模型配置 CRUD
+// ─────────────────────────────────────────────
+
+/** 获取所有 AI 模型配置（按创建时间倒序） */
+export async function getAllAiModelConfigs(): Promise<AiModelConfig[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(aiModelConfig).orderBy(desc(aiModelConfig.createdAt));
+}
+
+/** 获取当前激活的 AI 模型配置 */
+export async function getActiveAiModelConfig(): Promise<AiModelConfig | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db
+    .select()
+    .from(aiModelConfig)
+    .where(eq(aiModelConfig.isActive, true))
+    .limit(1);
+  return rows[0];
+}
+
+/** 新增 AI 模型配置 */
+export async function createAiModelConfig(data: InsertAiModelConfig): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(aiModelConfig).values(data);
+}
+
+/** 更新 AI 模型配置 */
+export async function updateAiModelConfig(
+  id: number,
+  data: Partial<InsertAiModelConfig>
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(aiModelConfig).set(data).where(eq(aiModelConfig.id, id));
+}
+
+/** 删除 AI 模型配置 */
+export async function deleteAiModelConfig(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(aiModelConfig).where(eq(aiModelConfig.id, id));
+}
+
+/**
+ * 激活指定 AI 模型配置（同时取消其他所有配置的激活状态）
+ * 使用事务确保同一时刻只有一个配置处于激活状态
+ */
+export async function activateAiModelConfig(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  // 先取消所有激活
+  await db.update(aiModelConfig).set({ isActive: false });
+  // 再激活指定配置
+  await db.update(aiModelConfig).set({ isActive: true }).where(eq(aiModelConfig.id, id));
 }

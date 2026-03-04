@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `ai_model_config` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`name` varchar(128) NOT NULL,\n\t`provider` varchar(64) NOT NULL DEFAULT 'deepseek',\n\t`apiKey` text NOT NULL,\n\t`baseUrl` varchar(512) NOT NULL,\n\t`model` varchar(128) NOT NULL,\n\t`imageDetail` varchar(16) NOT NULL DEFAULT 'high',\n\t`maxTokens` int NOT NULL DEFAULT 512,\n\t`isActive` boolean NOT NULL DEFAULT false,\n\t`notes` text,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `ai_model_config_id` PRIMARY KEY(`id`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user CXfHmr94eNzbLdV.28a0ed762f0f --database QNd7XpHC7FNgdL3ZPcJvPu --execute CREATE TABLE `ai_model_config` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`name` varchar(128) NOT NULL,\n\t`provider` varchar(64) NOT NULL DEFAULT 'deepseek',\n\t`apiKey` text NOT NULL,\n\t`baseUrl` varchar(512) NOT NULL,\n\t`model` varchar(128) NOT NULL,\n\t`imageDetail` varchar(16) NOT NULL DEFAULT 'high',\n\t`maxTokens` int NOT NULL DEFAULT 512,\n\t`isActive` boolean NOT NULL DEFAULT false,\n\t`notes` text,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `ai_model_config_id` PRIMARY KEY(`id`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1582
+}
