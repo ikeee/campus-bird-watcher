@@ -1,6 +1,6 @@
 import { eq, desc, and, gte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, birdSightings, cameraConfigs, InsertBirdSighting, InsertCameraConfig } from "../drizzle/schema";
+import { InsertUser, users, birdSightings, cameraConfigs, birdEncyclopedia, InsertBirdSighting, InsertCameraConfig, InsertBirdEncyclopedia } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -155,4 +155,53 @@ export async function deleteCameraConfig(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.delete(cameraConfigs).where(eq(cameraConfigs.id, id));
+}
+
+// ─── 鸟类百科 ───────────────────────────────────────────────────────────────
+
+/** 获取所有百科条目（按识别次数降序） */
+export async function getAllEncyclopedia() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(birdEncyclopedia).orderBy(desc(birdEncyclopedia.sightingCount));
+}
+
+/** 根据中文名查询百科条目 */
+export async function getEncyclopediaByNameZh(speciesNameZh: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(birdEncyclopedia).where(eq(birdEncyclopedia.speciesNameZh, speciesNameZh)).limit(1);
+  return rows[0];
+}
+
+/** 根据 ID 查询百科条目 */
+export async function getEncyclopediaById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(birdEncyclopedia).where(eq(birdEncyclopedia.id, id)).limit(1);
+  return rows[0];
+}
+
+/** 创建或更新百科条目（upsert by speciesNameZh） */
+export async function upsertEncyclopedia(data: InsertBirdEncyclopedia) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const updateSet: Record<string, unknown> = {};
+  const fields = ["speciesNameEn","scientificName","taxonomy","representativePicUrl","summary","morphology","behavior","diet","distribution","habitat","breeding","vocalizations","conservationStatus","funFacts","campusObservationTips","generatedAt"] as const;
+  for (const f of fields) {
+    if ((data as any)[f] !== undefined) updateSet[f] = (data as any)[f];
+  }
+  await db.insert(birdEncyclopedia).values(data).onDuplicateKeyUpdate({ set: updateSet });
+}
+
+/** 更新百科条目的识别次数和最近识别时间 */
+export async function updateEncyclopediaSightingStats(speciesNameZh: string, lastSeenAt: number, representativePicUrl?: string) {
+  const db = await getDb();
+  if (!db) return;
+  const updateData: Record<string, unknown> = {
+    sightingCount: sql`${birdEncyclopedia.sightingCount} + 1`,
+    lastSeenAt,
+  };
+  if (representativePicUrl) updateData.representativePicUrl = representativePicUrl;
+  await db.update(birdEncyclopedia).set(updateData).where(eq(birdEncyclopedia.speciesNameZh, speciesNameZh));
 }

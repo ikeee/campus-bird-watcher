@@ -1,5 +1,6 @@
 import { trpc } from "@/lib/trpc";
-import { Bird, Clock, Leaf, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Bird, Clock, Leaf, ChevronLeft, ChevronRight, Search, Library } from "lucide-react";
+import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -92,10 +93,43 @@ function SightingDetailDialog({ sighting, open, onClose }: { sighting: Sighting 
                 {format(new Date(sighting.capturedAt), "yyyy年MM月dd日 HH:mm:ss")}
               </div>
             </div>
+            <div className="pt-2 border-t border-border">
+              <EncyclopediaLink sighting={sighting} />
+            </div>
           </div>
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// 查看百科链接组件（内部查询百科条目是否存在）
+function EncyclopediaLink({ sighting }: { sighting: Sighting }) {
+  const { data: entry } = trpc.encyclopedia.getByName.useQuery({
+    speciesNameZh: sighting.speciesNameZh,
+    speciesNameEn: sighting.speciesNameEn,
+    scientificName: sighting.scientificName,
+    taxonomy: sighting.taxonomy,
+    representativePicUrl: sighting.s3PicUrl ?? sighting.originalPicUrl,
+  });
+
+  if (entry) {
+    return (
+      <Link href={`/encyclopedia/${entry.id}`}>
+        <Button variant="outline" size="sm" className="w-full text-xs gap-1.5">
+          <Library className="w-3.5 h-3.5" strokeWidth={1.5} />
+          查看百科介绍
+        </Button>
+      </Link>
+    );
+  }
+  return (
+    <Link href={`/encyclopedia`}>
+      <Button variant="ghost" size="sm" className="w-full text-xs gap-1.5 text-muted-foreground">
+        <Library className="w-3.5 h-3.5" strokeWidth={1.5} />
+        浏览鸟类百科
+      </Button>
+    </Link>
   );
 }
 

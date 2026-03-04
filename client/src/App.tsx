@@ -8,6 +8,8 @@ import Home from "./pages/Home";
 import Sightings from "./pages/Sightings";
 import Statistics from "./pages/Statistics";
 import Admin from "./pages/Admin";
+import Encyclopedia from "./pages/Encyclopedia";
+import EncyclopediaDetail from "./pages/EncyclopediaDetail";
 import Layout from "./components/Layout";
 
 function Router() {
@@ -17,6 +19,8 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/sightings" component={Sightings} />
         <Route path="/statistics" component={Statistics} />
+        <Route path="/encyclopedia" component={Encyclopedia} />
+        <Route path="/encyclopedia/:id" component={EncyclopediaDetail} />
         <Route path="/admin" component={Admin} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />

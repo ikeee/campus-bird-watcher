@@ -1,11 +1,12 @@
 import { Link, useLocation } from "wouter";
-import { Bird, BarChart2, BookOpen, Settings, Menu, X } from "lucide-react";
+import { Bird, BarChart2, BookOpen, Settings, Menu, X, Library } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "实时监控", icon: Bird },
   { href: "/sightings", label: "识别记录", icon: BookOpen },
+  { href: "/encyclopedia", label: "鸟类百科", icon: Library },
   { href: "/statistics", label: "历史统计", icon: BarChart2 },
   { href: "/admin", label: "管理后台", icon: Settings },
 ];

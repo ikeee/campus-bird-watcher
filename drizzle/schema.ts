@@ -89,3 +89,54 @@ export const cameraConfigs = mysqlTable("camera_configs", {
 
 export type CameraConfig = typeof cameraConfigs.$inferSelect;
 export type InsertCameraConfig = typeof cameraConfigs.$inferInsert;
+
+/**
+ * 鸟类百科信息表
+ * 每种鸟类一条记录，由 AI 生成并缓存，避免重复调用
+ */
+export const birdEncyclopedia = mysqlTable("bird_encyclopedia", {
+  id: int("id").autoincrement().primaryKey(),
+  /** 鸟类中文名（唯一键，用于查询） */
+  speciesNameZh: varchar("speciesNameZh", { length: 128 }).notNull().unique(),
+  /** 鸟类英文名 */
+  speciesNameEn: varchar("speciesNameEn", { length: 128 }).notNull(),
+  /** 学名 */
+  scientificName: varchar("scientificName", { length: 128 }).notNull(),
+  /** 目/科分类 */
+  taxonomy: varchar("taxonomy", { length: 128 }),
+  /** 代表性图片 URL（来自 S3） */
+  representativePicUrl: text("representativePicUrl"),
+  /** 简介（2-3句话） */
+  summary: text("summary"),
+  /** 形态特征 */
+  morphology: text("morphology"),
+  /** 生活习性 */
+  behavior: text("behavior"),
+  /** 食性描述 */
+  diet: text("diet"),
+  /** 分布地区 */
+  distribution: text("distribution"),
+  /** 栖息地描述 */
+  habitat: text("habitat"),
+  /** 繁殖信息 */
+  breeding: text("breeding"),
+  /** 鸣声描述 */
+  vocalizations: text("vocalizations"),
+  /** 保护状态（如：无危、近危、易危等） */
+  conservationStatus: varchar("conservationStatus", { length: 64 }),
+  /** 趣味小知识 */
+  funFacts: text("funFacts"),
+  /** 在校园内的观察建议 */
+  campusObservationTips: text("campusObservationTips"),
+  /** 本站累计识别次数（冗余字段，定期更新） */
+  sightingCount: int("sightingCount").notNull().default(0),
+  /** 最近一次识别时间（UTC 毫秒） */
+  lastSeenAt: bigint("lastSeenAt", { mode: "number" }),
+  /** 内容生成时间 */
+  generatedAt: timestamp("generatedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BirdEncyclopedia = typeof birdEncyclopedia.$inferSelect;
+export type InsertBirdEncyclopedia = typeof birdEncyclopedia.$inferInsert;

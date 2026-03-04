@@ -23,3 +23,13 @@
 ## 测试
 - [x] 后端 tRPC 路由单元测试（9 tests passed）
 - [x] 认证登出测试
+
+## 鸟类百科功能
+- [x] 扩展数据库：新增 bird_encyclopedia 表（存储 AI 生成的百科内容）
+- [x] 后端：AI 生成鸟类百科内容（习性、分布、鸣声、食性、繁殖等）
+- [x] 后端：tRPC 路由 encyclopedia.list / getById / getByName / generate / regenerate
+- [x] 前端：百科列表页（已识别品种卡片网格，含搜索过滤）
+- [x] 前端：百科详情页（知识卡片布局：习性、分布、鸣声、食性、繁殖、校园观察建议等）
+- [x] 导航栏添加"鸟类百科"入口
+- [x] 识别记录卡片添加"查看百科"跳转链接
+- [x] 编写百科相关单元测试（9 tests passed）
