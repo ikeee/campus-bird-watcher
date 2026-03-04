@@ -26,7 +26,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* ── 顶部导航栏 ── */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-sm">
+      <header className="sticky top-0 z-50 border-b border-border backdrop-blur-md" style={{ background: 'oklch(0.975 0.008 80 / 0.88)' }}>
         <div className="container flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
@@ -34,7 +34,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Bird className="w-5 h-5 text-primary" strokeWidth={1.5} />
             </div>
             <div className="leading-tight">
-              <div className="text-sm font-semibold text-foreground tracking-wide" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+              <div className="text-base font-semibold tracking-wide" style={{ fontFamily: "'Cormorant Garamond', serif", color: 'oklch(0.22 0.05 155)' }}>
                 Campus Bird Watch
               </div>
               <div className="text-xs text-muted-foreground">校园观鸟站</div>

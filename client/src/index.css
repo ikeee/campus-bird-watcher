@@ -45,25 +45,26 @@
 
 :root {
   --radius: 0.75rem;
-  --background:        oklch(0.975 0.008 80);
-  --foreground:        oklch(0.22 0.02 60);
-  --card:              oklch(0.99 0.005 80);
-  --card-foreground:   oklch(0.22 0.02 60);
-  --popover:           oklch(0.99 0.005 80);
-  --popover-foreground: oklch(0.22 0.02 60);
-  --primary:           oklch(0.38 0.08 155);
-  --primary-foreground: oklch(0.97 0.01 80);
-  --secondary:         oklch(0.92 0.02 80);
-  --secondary-foreground: oklch(0.35 0.04 60);
-  --muted:             oklch(0.94 0.015 80);
-  --muted-foreground:  oklch(0.52 0.03 60);
-  --accent:            oklch(0.62 0.13 55);
-  --accent-foreground: oklch(0.97 0.01 80);
+  /* 参考 BirdBuddy 风格：暖米白背景 + 深森林绿主色 */
+  --background:        oklch(0.965 0.012 85);   /* 暖米白 #f0ece4 */
+  --foreground:        oklch(0.20 0.04 155);    /* 深森林绿 */
+  --card:              oklch(0.985 0.006 85);   /* 卡片白 */
+  --card-foreground:   oklch(0.20 0.04 155);
+  --popover:           oklch(0.985 0.006 85);
+  --popover-foreground: oklch(0.20 0.04 155);
+  --primary:           oklch(0.32 0.09 155);    /* 深森林绿 主色 */
+  --primary-foreground: oklch(0.97 0.01 85);
+  --secondary:         oklch(0.93 0.018 85);
+  --secondary-foreground: oklch(0.30 0.05 155);
+  --muted:             oklch(0.94 0.012 85);
+  --muted-foreground:  oklch(0.50 0.03 100);
+  --accent:            oklch(0.60 0.13 55);     /* 暖赤香强调色 */
+  --accent-foreground: oklch(0.97 0.01 85);
   --destructive:       oklch(0.55 0.18 25);
-  --destructive-foreground: oklch(0.97 0.01 80);
-  --border:            oklch(0.88 0.015 80);
-  --input:             oklch(0.92 0.01 80);
-  --ring:              oklch(0.38 0.08 155);
+  --destructive-foreground: oklch(0.97 0.01 85);
+  --border:            oklch(0.88 0.014 85);
+  --input:             oklch(0.92 0.010 85);
+  --ring:              oklch(0.32 0.09 155);
   --chart-1: oklch(0.38 0.08 155);
   --chart-2: oklch(0.62 0.13 55);
   --chart-3: oklch(0.55 0.09 200);
