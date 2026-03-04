@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { Bird, Camera, Clock, Leaf, TrendingUp } from "lucide-react";
+import { Bird, Camera, Clock, Leaf, TrendingUp, BookOpen, Feather, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -63,6 +63,14 @@ function BirdCard({ sighting }: { sighting: any }) {
             <Clock className="w-3 h-3" strokeWidth={1.5} />
             {timeAgo}
           </p>
+          <Link
+            href={`/encyclopedia`}
+            onClick={(e) => e.stopPropagation()}
+            className="mt-2 inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary transition-colors"
+          >
+            <BookOpen className="w-3 h-3" strokeWidth={1.5} />
+            查看百科
+          </Link>
         </div>
       </div>
     </div>
@@ -147,6 +155,9 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── 鸟类百科入口 ── */}
+      <EncyclopediaEntry />
+
       {/* ── 最新识别记录 ── */}
       <section className="container py-12">
         <div className="flex items-center justify-between mb-8">
@@ -203,5 +214,84 @@ export default function Home() {
         )}
       </section>
     </div>
+  );
+}
+
+// ── 百科快捷入口 ─────────────────────────────────────────────────────────────
+function EncyclopediaEntry() {
+  const { data: stats } = trpc.encyclopedia.stats.useQuery();
+  const { data: entries } = trpc.encyclopedia.list.useQuery();
+  const previews = (entries ?? []).filter((e) => !!e.representativePicUrl).slice(0, 4);
+
+  return (
+    <section className="border-y border-border bg-secondary/30">
+      <div className="container py-10">
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+          {/* 文字区 */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 text-primary/70 text-xs font-medium mb-2 tracking-widest uppercase">
+              <Feather className="w-3.5 h-3.5" strokeWidth={1.5} />
+              <span>Bird Encyclopedia</span>
+            </div>
+            <h2
+              className="text-2xl font-semibold text-foreground mb-2"
+              style={{ fontFamily: "'Noto Serif SC', 'Cormorant Garamond', serif" }}
+            >
+              鸟类百科
+            </h2>
+            <p className="text-muted-foreground text-sm leading-relaxed mb-4 max-w-md">
+              探索每一位曾到访鸟屋的羽毛朋友——AI 自动生成的形态、习性、分布与鸣声知识卡片。
+            </p>
+            {stats && (
+              <p className="text-xs text-muted-foreground mb-4">
+                已收录
+                <span className="text-foreground font-semibold mx-1">{stats.total}</span>
+                种鸟类
+                {stats.taxonomyCounts.length > 0 && (
+                  <span className="ml-1">
+                    · {stats.taxonomyCounts.map((t) => t.taxonomy.split(" / ").pop()).slice(0, 3).join("、")} 等
+                  </span>
+                )}
+              </p>
+            )}
+            <Link href="/encyclopedia">
+              <button className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:bg-primary/90 transition-colors">
+                <BookOpen className="w-4 h-4" strokeWidth={1.5} />
+                浏览鸟类百科
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </Link>
+          </div>
+
+          {/* 预览图片网格 */}
+          {previews.length > 0 && (
+            <div className="flex gap-2 flex-shrink-0">
+              {previews.map((entry) => (
+                <Link key={entry.id} href={`/encyclopedia/${entry.id}`}>
+                  <div className="relative w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden border border-border group cursor-pointer">
+                    <img
+                      src={entry.representativePicUrl!}
+                      alt={entry.speciesNameZh}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1.5">
+                      <span className="text-white text-[10px] leading-tight font-medium">{entry.speciesNameZh}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+              {(stats?.total ?? 0) > 4 && (
+                <Link href="/encyclopedia">
+                  <div className="w-20 h-20 md:w-24 md:h-24 rounded-xl border border-dashed border-border flex flex-col items-center justify-center gap-1 hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer">
+                    <span className="text-lg font-light text-muted-foreground">+{(stats?.total ?? 0) - 4}</span>
+                    <span className="text-[10px] text-muted-foreground">更多</span>
+                  </div>
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }

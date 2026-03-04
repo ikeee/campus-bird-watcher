@@ -358,3 +358,79 @@ export async function reclassifyByThreshold(threshold: number): Promise<void> {
       )
     );
 }
+
+/** 获取所有已收录的分类列表（去重） */
+export async function getAllTaxonomies(): Promise<string[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({ taxonomy: birdEncyclopedia.taxonomy })
+    .from(birdEncyclopedia)
+    .where(sql`${birdEncyclopedia.taxonomy} IS NOT NULL`)
+    .groupBy(birdEncyclopedia.taxonomy)
+    .orderBy(birdEncyclopedia.taxonomy);
+  return rows.map((r) => r.taxonomy).filter((t): t is string => !!t);
+}
+
+/** 按分类筛选百科条目 */
+export async function getEncyclopediaByTaxonomy(taxonomy: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(birdEncyclopedia)
+    .where(sql`${birdEncyclopedia.taxonomy} LIKE ${`%${taxonomy}%`}`)
+    .orderBy(desc(birdEncyclopedia.sightingCount));
+}
+
+/** 获取某鸟类的最近识别记录（含图片），用于详情页多图展示 */
+export async function getRecentSightingsBySpecies(
+  speciesNameZh: string,
+  limit = 12
+) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: birdSightings.id,
+      s3PicUrl: birdSightings.s3PicUrl,
+      originalPicUrl: birdSightings.originalPicUrl,
+      capturedAt: birdSightings.capturedAt,
+      confidence: birdSightings.confidence,
+      deviceSerial: birdSightings.deviceSerial,
+      reviewStatus: birdSightings.reviewStatus,
+    })
+    .from(birdSightings)
+    .where(
+      and(
+        eq(birdSightings.speciesNameZh, speciesNameZh),
+        sql`${birdSightings.reviewStatus} IN ('auto_approved','approved')`
+      )
+    )
+    .orderBy(desc(birdSightings.capturedAt))
+    .limit(limit);
+}
+
+/** 获取百科条目总数和各分类数量统计 */
+export async function getEncyclopediaStats() {
+  const db = await getDb();
+  if (!db) return { total: 0, taxonomyCounts: [] as { taxonomy: string; count: number }[] };
+  const totalRows = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(birdEncyclopedia);
+  const total = Number(totalRows[0]?.count ?? 0);
+  const taxRows = await db
+    .select({
+      taxonomy: birdEncyclopedia.taxonomy,
+      count: sql<number>`COUNT(*)`,
+    })
+    .from(birdEncyclopedia)
+    .where(sql`${birdEncyclopedia.taxonomy} IS NOT NULL`)
+    .groupBy(birdEncyclopedia.taxonomy)
+    .orderBy(desc(sql`COUNT(*)`));
+  const taxonomyCounts = taxRows.map((r) => ({
+    taxonomy: r.taxonomy ?? "",
+    count: Number(r.count),
+  }));
+  return { total, taxonomyCounts };
+}

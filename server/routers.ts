@@ -20,6 +20,10 @@ import {
   getEncyclopediaByNameZh,
   getEncyclopediaById,
   upsertEncyclopedia,
+  getAllTaxonomies,
+  getEncyclopediaByTaxonomy,
+  getRecentSightingsBySpecies,
+  getEncyclopediaStats,
   getConfidenceThreshold,
   setSystemConfig,
   getPendingReviews,
@@ -267,6 +271,31 @@ export const appRouter = router({
         return await getEncyclopediaByNameZh(input.speciesNameZh);
       }),
 
+    /** 获取所有已收录的分类列表 */
+    taxonomies: publicProcedure.query(async () => {
+      return getAllTaxonomies();
+    }),
+    /** 获取百科统计（总数、分类分布） */
+    stats: publicProcedure.query(async () => {
+      return getEncyclopediaStats();
+    }),
+    /** 按分类筛选百科条目 */
+    byTaxonomy: publicProcedure
+      .input(z.object({ taxonomy: z.string().min(1) }))
+      .query(async ({ input }) => {
+        return getEncyclopediaByTaxonomy(input.taxonomy);
+      }),
+    /** 获取某鸟类的最近识别记录（含图片） */
+    recentSightings: publicProcedure
+      .input(
+        z.object({
+          speciesNameZh: z.string().min(1),
+          limit: z.number().min(1).max(24).default(12),
+        })
+      )
+      .query(async ({ input }) => {
+        return getRecentSightingsBySpecies(input.speciesNameZh, input.limit);
+      }),
     /** 管理员强制重新生成 */
     regenerate: adminProcedure
       .input(
