@@ -36,7 +36,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Slider } from "@/components/ui/slider";
+import { Link } from "wouter";
+import { AlertTriangle, ExternalLink } from "lucide-react";
 
 type CameraFormData = {
   name: string;
@@ -172,6 +175,32 @@ export default function Admin() {
   const [deleteId, setDeleteId] = useState<number | undefined>();
 
   const utils = trpc.useUtils();
+
+  // 置信度阈值状态
+  const { data: thresholdData } = trpc.config.getThreshold.useQuery();
+  const { data: reviewStats } = trpc.review.stats.useQuery(undefined, {
+    enabled: isAuthenticated && user?.role === "admin",
+    refetchInterval: 15000,
+  });
+  const [localThreshold, setLocalThreshold] = useState<number>(0.75);
+  const [thresholdSaved, setThresholdSaved] = useState(false);
+
+  useEffect(() => {
+    if (thresholdData?.threshold !== undefined) {
+      setLocalThreshold(thresholdData.threshold);
+    }
+  }, [thresholdData?.threshold]);
+
+  const setThresholdMutation = trpc.config.setThreshold.useMutation({
+    onSuccess: () => {
+      toast.success("阈值已更新，历史记录已重新分类");
+      setThresholdSaved(true);
+      setTimeout(() => setThresholdSaved(false), 2000);
+      utils.review.stats.invalidate();
+    },
+    onError: (e) => toast.error(`设置失败: ${e.message}`),
+  });
+
   const { data: cameras, isLoading } = trpc.cameras.list.useQuery(undefined, {
     enabled: isAuthenticated && user?.role === "admin",
   });
@@ -351,8 +380,80 @@ export default function Admin() {
         </div>
       )}
 
+      {/* 置信度阈值设置面板 */}
+      <div className="mt-8 bg-card border border-border rounded-xl p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500" strokeWidth={1.5} />
+            <h3 className="text-sm font-medium text-foreground">识别置信度阈值</h3>
+          </div>
+          {reviewStats && reviewStats.pending > 0 && (
+            <Link href="/review">
+              <Button variant="outline" size="sm" className="border-amber-200 text-amber-700 hover:bg-amber-50 gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                {reviewStats.pending} 条待复核
+                <ExternalLink className="w-3 h-3" />
+              </Button>
+            </Link>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground mb-4">
+          置信度低于阈值的识别结果将进入“待复核队列”，需要管理员手动确认。高于阈值的识别结果将自动通过。
+        </p>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-foreground/70">当前阈值</span>
+            <span className="text-lg font-serif font-bold text-primary">
+              {Math.round(localThreshold * 100)}%
+            </span>
+          </div>
+          <Slider
+            value={[localThreshold]}
+            min={0}
+            max={1}
+            step={0.01}
+            onValueChange={([v]) => setLocalThreshold(v)}
+            className="w-full"
+          />
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>0%（全部进入复核）</span>
+            <div className="flex gap-2">
+              {[0.5, 0.6, 0.7, 0.75, 0.8, 0.9].map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setLocalThreshold(v)}
+                  className={`px-2 py-0.5 rounded text-xs transition-colors ${
+                    Math.abs(localThreshold - v) < 0.005
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted hover:bg-muted/80"
+                  }`}
+                >
+                  {Math.round(v * 100)}%
+                </button>
+              ))}
+            </div>
+            <span>100%（全部自动通过）</span>
+          </div>
+          <div className="flex items-center justify-between pt-1">
+            <div className="text-xs text-muted-foreground">
+              {reviewStats && (
+                <span>当前待复核：<strong className="text-amber-600">{reviewStats.pending}</strong> 条 · 自动通过：<strong>{reviewStats.autoApproved}</strong> 条</span>
+              )}
+            </div>
+            <Button
+              size="sm"
+              onClick={() => setThresholdMutation.mutate({ threshold: localThreshold, reclassify: true })}
+              disabled={setThresholdMutation.isPending || Math.abs(localThreshold - (thresholdData?.threshold ?? 0.75)) < 0.001}
+              className={thresholdSaved ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+            >
+              {setThresholdMutation.isPending ? "保存中..." : thresholdSaved ? "已保存" : "应用阈值"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* 使用说明 */}
-      <div className="mt-8 bg-muted/50 border border-border rounded-xl p-5">
+      <div className="mt-4 bg-muted/50 border border-border rounded-xl p-5">
         <h3 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
           <Settings className="w-4 h-4 text-primary" strokeWidth={1.5} />
           配置说明

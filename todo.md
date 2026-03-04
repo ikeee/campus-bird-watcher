@@ -33,3 +33,14 @@
 - [x] 导航栏添加"鸟类百科"入口
 - [x] 识别记录卡片添加"查看百科"跳转链接
 - [x] 编写百科相关单元测试（9 tests passed）
+
+## 置信度阈值与人工复核功能
+- [x] 数据库：bird_sightings 表添加 reviewStatus 字段（auto_approved / pending_review / approved / rejected）
+- [x] 数据库：新增 system_config 表（存储 confidenceThreshold 等系统配置）
+- [x] 后端：tRPC 路由 config.getThreshold / config.setThreshold
+- [x] 后端：tRPC 路由 review.pendingList / review.approve / review.reject / review.stats
+- [x] 监控服务：抓拍识别后根据阈值自动设置 reviewStatus
+- [x] 前端：管理后台新增阈值滑块设置面板
+- [x] 前端：新增"待复核"页面（复核队列卡片 + 通过/拒绝操作）
+- [x] 前端：导航栏添加待复核数量角标
+- [x] 编写置信度阈值与复核功能单元测试

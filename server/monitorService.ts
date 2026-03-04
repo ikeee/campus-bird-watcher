@@ -4,7 +4,7 @@
  */
 
 import axios from "axios";
-import { getDb } from "./db";
+import { getDb, getConfidenceThreshold } from "./db";
 import { birdSightings, cameraConfigs } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { getEzvizToken, captureDeviceImage } from "./ezviz";
@@ -87,6 +87,10 @@ async function runCaptureAndRecognize(configId: number): Promise<void> {
 
     // 5. 只有识别到鸟类才写入数据库
     if (recognition.hasBird && recognition.confidence > 0.3) {
+      // 根据置信度阈值决定审核状态
+      const threshold = await getConfidenceThreshold();
+      const reviewStatus = recognition.confidence >= threshold ? "auto_approved" : "pending_review";
+
       await db.insert(birdSightings).values({
         speciesNameZh: recognition.speciesNameZh,
         speciesNameEn: recognition.speciesNameEn,
@@ -99,10 +103,12 @@ async function runCaptureAndRecognize(configId: number): Promise<void> {
         deviceSerial: config.deviceSerial,
         description: recognition.description,
         capturedAt,
+        reviewStatus,
       });
 
+      const statusLabel = reviewStatus === "auto_approved" ? "自动通过" : "待复核";
       console.log(
-        `[Monitor] 识别到鸟类: ${recognition.speciesNameZh} (${recognition.speciesNameEn}) 置信度: ${(recognition.confidence * 100).toFixed(1)}%`
+        `[Monitor] 识别到鸟类: ${recognition.speciesNameZh} (${recognition.speciesNameEn}) 置信度: ${(recognition.confidence * 100).toFixed(1)}% [状态: ${statusLabel}]`
       );
     } else {
       console.log(`[Monitor] 未检测到鸟类 (设备: ${config.deviceSerial})`);

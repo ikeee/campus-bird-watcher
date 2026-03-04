@@ -53,6 +53,27 @@ export const birdSightings = mysqlTable("bird_sightings", {
   description: text("description"),
   /** 识别时间（UTC 毫秒时间戳） */
   capturedAt: bigint("capturedAt", { mode: "number" }).notNull(),
+  /**
+   * 审核状态：
+   * - auto_approved: 置信度 ≥ 阈值，自动通过
+   * - pending_review: 置信度 < 阈值，等待管理员复核
+   * - approved: 管理员手动通过
+   * - rejected: 管理员手动拒绝
+   */
+  reviewStatus: mysqlEnum("reviewStatus", [
+    "auto_approved",
+    "pending_review",
+    "approved",
+    "rejected",
+  ])
+    .notNull()
+    .default("auto_approved"),
+  /** 复核操作的管理员 ID */
+  reviewedBy: int("reviewedBy"),
+  /** 复核时间 */
+  reviewedAt: timestamp("reviewedAt"),
+  /** 复核备注 */
+  reviewNote: text("reviewNote"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -140,3 +161,21 @@ export const birdEncyclopedia = mysqlTable("bird_encyclopedia", {
 
 export type BirdEncyclopedia = typeof birdEncyclopedia.$inferSelect;
 export type InsertBirdEncyclopedia = typeof birdEncyclopedia.$inferInsert;
+
+/**
+ * 系统配置表
+ * 存储全局配置项，以 key-value 形式保存
+ */
+export const systemConfig = mysqlTable("system_config", {
+  id: int("id").autoincrement().primaryKey(),
+  /** 配置项键名 */
+  configKey: varchar("configKey", { length: 64 }).notNull().unique(),
+  /** 配置项值（JSON 字符串） */
+  configValue: text("configValue").notNull(),
+  /** 配置项描述 */
+  description: varchar("description", { length: 256 }),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SystemConfig = typeof systemConfig.$inferSelect;
+export type InsertSystemConfig = typeof systemConfig.$inferInsert;

@@ -205,3 +205,156 @@ export async function updateEncyclopediaSightingStats(speciesNameZh: string, las
   if (representativePicUrl) updateData.representativePicUrl = representativePicUrl;
   await db.update(birdEncyclopedia).set(updateData).where(eq(birdEncyclopedia.speciesNameZh, speciesNameZh));
 }
+
+// ─── 系统配置 ───────────────────────────────────────────────────────────────
+
+import { systemConfig } from "../drizzle/schema";
+
+/** 获取系统配置值 */
+export async function getSystemConfig(key: string): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(systemConfig).where(eq(systemConfig.configKey, key)).limit(1);
+  return rows[0]?.configValue ?? null;
+}
+
+/** 设置系统配置值 */
+export async function setSystemConfig(key: string, value: string, description?: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .insert(systemConfig)
+    .values({ configKey: key, configValue: value, description })
+    .onDuplicateKeyUpdate({ set: { configValue: value } });
+}
+
+/** 获取置信度阈值（默认 0.75） */
+export async function getConfidenceThreshold(): Promise<number> {
+  const val = await getSystemConfig("confidenceThreshold");
+  const parsed = parseFloat(val ?? "0.75");
+  return isNaN(parsed) ? 0.75 : Math.max(0, Math.min(1, parsed));
+}
+
+// ─── 复核队列 ───────────────────────────────────────────────────────────────
+
+import { ne, inArray, lt } from "drizzle-orm";
+
+/** 获取待复核记录列表（分页） */
+export async function getPendingReviews(page = 1, pageSize = 20) {
+  const db = await getDb();
+  if (!db) return { items: [], total: 0 };
+  const offset = (page - 1) * pageSize;
+  const [items, countResult] = await Promise.all([
+    db
+      .select()
+      .from(birdSightings)
+      .where(eq(birdSightings.reviewStatus, "pending_review"))
+      .orderBy(desc(birdSightings.capturedAt))
+      .limit(pageSize)
+      .offset(offset),
+    db
+      .select({ total: sql<number>`COUNT(*)` })
+      .from(birdSightings)
+      .where(eq(birdSightings.reviewStatus, "pending_review")),
+  ]);
+  return { items, total: countResult[0]?.total ?? 0 };
+}
+
+/** 获取复核统计数据 */
+export async function getReviewStats() {
+  const db = await getDb();
+  if (!db) return { pending: 0, approved: 0, rejected: 0, autoApproved: 0 };
+  const rows = await db
+    .select({
+      reviewStatus: birdSightings.reviewStatus,
+      count: sql<number>`COUNT(*)`.as("count"),
+    })
+    .from(birdSightings)
+    .groupBy(birdSightings.reviewStatus);
+  const stats = { pending: 0, approved: 0, rejected: 0, autoApproved: 0 };
+  for (const row of rows) {
+    if (row.reviewStatus === "pending_review") stats.pending = row.count;
+    else if (row.reviewStatus === "approved") stats.approved = row.count;
+    else if (row.reviewStatus === "rejected") stats.rejected = row.count;
+    else if (row.reviewStatus === "auto_approved") stats.autoApproved = row.count;
+  }
+  return stats;
+}
+
+/** 审核通过单条记录 */
+export async function approveSighting(id: number, reviewedBy: number, note?: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .update(birdSightings)
+    .set({
+      reviewStatus: "approved",
+      reviewedBy,
+      reviewedAt: new Date(),
+      reviewNote: note ?? null,
+    })
+    .where(eq(birdSightings.id, id));
+}
+
+/** 拒绝单条记录 */
+export async function rejectSighting(id: number, reviewedBy: number, note?: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .update(birdSightings)
+    .set({
+      reviewStatus: "rejected",
+      reviewedBy,
+      reviewedAt: new Date(),
+      reviewNote: note ?? null,
+    })
+    .where(eq(birdSightings.id, id));
+}
+
+/** 批量审核通过 */
+export async function batchApproveSightings(ids: number[], reviewedBy: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (ids.length === 0) return;
+  await db
+    .update(birdSightings)
+    .set({ reviewStatus: "approved", reviewedBy, reviewedAt: new Date() })
+    .where(inArray(birdSightings.id, ids));
+}
+
+/** 批量拒绝 */
+export async function batchRejectSightings(ids: number[], reviewedBy: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  if (ids.length === 0) return;
+  await db
+    .update(birdSightings)
+    .set({ reviewStatus: "rejected", reviewedBy, reviewedAt: new Date() })
+    .where(inArray(birdSightings.id, ids));
+}
+
+/** 将所有现有 pending 记录重新按新阈值分类（阈值变更时调用） */
+export async function reclassifyByThreshold(threshold: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  // 低于阈值 → pending_review
+  await db
+    .update(birdSightings)
+    .set({ reviewStatus: "pending_review" })
+    .where(
+      and(
+        lt(birdSightings.confidence, threshold),
+        inArray(birdSightings.reviewStatus, ["auto_approved"])
+      )
+    );
+  // 高于等于阈值 → auto_approved（仅对 pending_review 中未人工操作的）
+  await db
+    .update(birdSightings)
+    .set({ reviewStatus: "auto_approved" })
+    .where(
+      and(
+        gte(birdSightings.confidence, threshold),
+        eq(birdSightings.reviewStatus, "pending_review")
+      )
+    );
+}

@@ -20,6 +20,15 @@ import {
   getEncyclopediaByNameZh,
   getEncyclopediaById,
   upsertEncyclopedia,
+  getConfidenceThreshold,
+  setSystemConfig,
+  getPendingReviews,
+  getReviewStats,
+  approveSighting,
+  rejectSighting,
+  batchApproveSightings,
+  batchRejectSightings,
+  reclassifyByThreshold,
 } from "./db";
 import {
   startMonitoring,
@@ -294,7 +303,101 @@ export const appRouter = router({
       }),
   }),
 
-  // ─── 摄像头配置管理（管理员） ──────────────────────────────
+  // ─── 系统配置（管理员） ────────────────────────────────
+  config: router({
+    /** 获取当前置信度阈值 */
+    getThreshold: publicProcedure.query(async () => {
+      return { threshold: await getConfidenceThreshold() };
+    }),
+
+    /** 设置置信度阈值（管理员） */
+    setThreshold: adminProcedure
+      .input(
+        z.object({
+          threshold: z.number().min(0).max(1),
+          reclassify: z.boolean().default(true),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await setSystemConfig(
+          "confidenceThreshold",
+          input.threshold.toString(),
+          "识别置信度阈值（0.0~1.0）"
+        );
+        if (input.reclassify) {
+          await reclassifyByThreshold(input.threshold);
+        }
+        return { success: true, threshold: input.threshold };
+      }),
+  }),
+
+  // ─── 复核队列（管理员） ────────────────────────────────
+  review: router({
+    /** 获取待复核记录列表 */
+    pendingList: adminProcedure
+      .input(
+        z.object({
+          page: z.number().min(1).default(1),
+          pageSize: z.number().min(1).max(50).default(20),
+        })
+      )
+      .query(async ({ input }) => {
+        return getPendingReviews(input.page, input.pageSize);
+      }),
+
+    /** 复核统计数据 */
+    stats: adminProcedure.query(async () => {
+      const [stats, threshold] = await Promise.all([
+        getReviewStats(),
+        getConfidenceThreshold(),
+      ]);
+      return { ...stats, threshold };
+    }),
+
+    /** 审核通过单条 */
+    approve: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          note: z.string().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        await approveSighting(input.id, ctx.user.id, input.note);
+        return { success: true };
+      }),
+
+    /** 拒绝单条 */
+    reject: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          note: z.string().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        await rejectSighting(input.id, ctx.user.id, input.note);
+        return { success: true };
+      }),
+
+    /** 批量审核通过 */
+    batchApprove: adminProcedure
+      .input(z.object({ ids: z.array(z.number()).min(1) }))
+      .mutation(async ({ ctx, input }) => {
+        await batchApproveSightings(input.ids, ctx.user.id);
+        return { success: true, count: input.ids.length };
+      }),
+
+    /** 批量拒绝 */
+    batchReject: adminProcedure
+      .input(z.object({ ids: z.array(z.number()).min(1) }))
+      .mutation(async ({ ctx, input }) => {
+        await batchRejectSightings(input.ids, ctx.user.id);
+        return { success: true, count: input.ids.length };
+      }),
+  }),
+
+  // ─── 摄像头配置管理（管理员） ──────────────────────
   cameras: router({
     list: adminProcedure.query(async () => {
       const configs = await getAllCameraConfigs();

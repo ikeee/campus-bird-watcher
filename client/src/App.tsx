@@ -10,6 +10,7 @@ import Statistics from "./pages/Statistics";
 import Admin from "./pages/Admin";
 import Encyclopedia from "./pages/Encyclopedia";
 import EncyclopediaDetail from "./pages/EncyclopediaDetail";
+import Review from "./pages/Review";
 import Layout from "./components/Layout";
 
 function Router() {
@@ -22,6 +23,7 @@ function Router() {
         <Route path="/encyclopedia" component={Encyclopedia} />
         <Route path="/encyclopedia/:id" component={EncyclopediaDetail} />
         <Route path="/admin" component={Admin} />
+        <Route path="/review" component={Review} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>

@@ -2,6 +2,8 @@ import { Link, useLocation } from "wouter";
 import { Bird, BarChart2, BookOpen, Settings, Menu, X, Library } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 const navItems = [
   { href: "/", label: "实时监控", icon: Bird },
@@ -14,6 +16,12 @@ const navItems = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, isAuthenticated } = useAuth();
+  const { data: reviewStats } = trpc.review.stats.useQuery(undefined, {
+    enabled: isAuthenticated && user?.role === "admin",
+    refetchInterval: 30000,
+  });
+  const pendingCount = reviewStats?.pending ?? 0;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -50,6 +58,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 >
                   <Icon className="w-4 h-4" strokeWidth={1.5} />
                   {label}
+                  {href === "/admin" && pendingCount > 0 && (
+                    <span className="ml-0.5 inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold rounded-full bg-amber-500 text-white">
+                      {pendingCount > 9 ? "9+" : pendingCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -83,6 +96,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 >
                   <Icon className="w-4 h-4" strokeWidth={1.5} />
                   {label}
+                  {href === "/admin" && pendingCount > 0 && (
+                    <span className="ml-0.5 inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold rounded-full bg-amber-500 text-white">
+                      {pendingCount > 9 ? "9+" : pendingCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
