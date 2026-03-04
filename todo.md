@@ -67,3 +67,9 @@
 
 ## Bug 修复
 - [x] 修复首页按小时统计 SQL 错误（GROUP BY HOUR 表达式与 SELECT 别名不一致）
+
+## UI 卡片样式精修
+- [x] FanGallery：卡片改为深色圆角（深绿/深灰背景）、顶部弧形鸟屋遮罩 SVG
+- [x] FanGallery：右上角绿色胶囊标签（品种名）
+- [x] FanGallery：去掉"Stunning Images"标题文字
+- [x] FanGallery：5 张卡片扇形展开透视角度与参考图一致

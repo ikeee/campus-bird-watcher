@@ -134,7 +134,7 @@ export default function Home() {
                 letterSpacing: "-0.01em",
               }}
             >
-              Stunning Images
+              每一只鸟，都是自然的馈赠
             </h1>
 
             <p
