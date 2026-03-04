@@ -101,15 +101,17 @@ export async function getHourlyStats() {
   if (!db) return [];
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
+  // 使用原始 SQL 字符串避免 Drizzle 将列名参数化导致 GROUP BY 失败
+  const colName = "capturedAt";
   return db
     .select({
-      hour: sql<number>`HOUR(FROM_UNIXTIME(${birdSightings.capturedAt} / 1000))`.as("hour"),
+      hour: sql<number>`HOUR(FROM_UNIXTIME(\`${colName}\` / 1000))`.as("hour"),
       count: sql<number>`COUNT(*)`.as("count"),
     })
     .from(birdSightings)
     .where(gte(birdSightings.capturedAt, todayStart.getTime()))
-    .groupBy(sql`HOUR(FROM_UNIXTIME(${birdSightings.capturedAt} / 1000))`)
-    .orderBy(sql`hour`);
+    .groupBy(sql`HOUR(FROM_UNIXTIME(\`${colName}\` / 1000))`)
+    .orderBy(sql`HOUR(FROM_UNIXTIME(\`${colName}\` / 1000))`);
 }
 
 /** 分页获取识别记录 */
